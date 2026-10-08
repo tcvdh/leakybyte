@@ -5,20 +5,22 @@ import { appendFileSync } from "node:fs";
 import { createVault, redactWith, restore, type Vault } from "../lib/redact.ts";
 
 const PLACEHOLDER_MAX = 40; // longest placeholder we might have to hold back mid-stream
-const SKIP = new Set(["type", "role", "id", "tool_use_id", "name", "media_type", "data"]);
+const SKIP = new Set(["type", "role", "id", "tool_use_id", "name", "media_type", "data", "model"]);
 const HOP = new Set(["host", "content-length", "connection", "accept-encoding", "transfer-encoding"]);
 
 // Walk a JSON value, applying fn to every string except structural fields.
-function walk(x: unknown, fn: (s: string) => string, key = ""): unknown {
-  if (typeof x === "string") return SKIP.has(key) ? x : fn(x);
-  if (Array.isArray(x)) return x.map((v) => walk(v, fn));
-  if (x && typeof x === "object") return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, walk(v, fn, k)]));
+// Inside tool_use `input` nothing is structural: those keys are user data, so everything is scanned.
+function walk(x: unknown, fn: (s: string) => string, key = "", inInput = false): unknown {
+  if (typeof x === "string") return !inInput && SKIP.has(key) ? x : fn(x);
+  if (Array.isArray(x)) return x.map((v) => walk(v, fn, key, inInput));
+  if (x && typeof x === "object")
+    return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, walk(v, fn, k, inInput || k === "input")]));
   return x;
 }
 
+// Redact the whole body (system, messages, tools, metadata...), not just the fields we know about.
 export function redactRequest(body: Record<string, unknown>, v: Vault) {
-  const f = (s: string) => redactWith(v, s).text;
-  return { ...body, system: walk(body.system, f), messages: walk(body.messages, f) };
+  return walk(body, (s) => redactWith(v, s).text) as Record<string, unknown>;
 }
 
 // Streaming: a placeholder can be split across deltas, so hold back an unfinished tail.
@@ -77,11 +79,15 @@ export function createProxy(upstream = process.env.LEAKYBYTE_UPSTREAM ?? "https:
       let stream = false;
       let model: unknown;
 
-      const isMessages = req.method === "POST" && req.url?.split("?")[0] === "/v1/messages";
-      if (isMessages) {
+      const path = (req.url ?? "").split("?")[0].replace(/\/+$/, "");
+      const isMessages = req.method === "POST" && path === "/v1/messages";
+      // Fail closed: a POST we can't redact must not be forwarded raw.
+      if (req.method === "POST" && !isMessages && path !== "/v1/messages/count_tokens")
+        return void res.writeHead(501).end('{"error":"LeakyByte only proxies POST /v1/messages; other POST routes are blocked"}');
+      if (req.method === "POST") {
         let json: Record<string, unknown>;
         try { json = JSON.parse(raw.toString()); } catch { return void res.writeHead(400).end('{"error":"invalid JSON"}'); }
-        stream = json.stream === true;
+        stream = isMessages && json.stream === true;
         model = json.model;
         body = JSON.stringify(redactRequest(json, vault));
         const counts = Object.fromEntries(Object.entries(vault.counts));

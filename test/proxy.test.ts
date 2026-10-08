@@ -56,4 +56,17 @@ test("streaming: placeholder split across deltas is restored", async () => {
   close();
 });
 
+test("redacts tool inputs under any key and non-message fields; blocks unknown POST routes", async () => {
+  const { base, close } = await setup();
+  const body = JSON.stringify({
+    model: "m", max_tokens: 8, metadata: { user_id: EMAIL }, tools: [{ name: "t", description: `key ${KEY}`, input_schema: {} }],
+    messages: [{ role: "user", content: [{ type: "tool_use", id: "x", name: "t", input: { name: EMAIL, data: KEY } }, { type: "text", text: EMAIL }] }],
+  });
+  await fetch(base + "/v1/messages/", { method: "POST", body });
+  assert.ok(!seen.includes(EMAIL) && !seen.includes(KEY), seen);
+  const r = await fetch(base + "/v1/messages/batches", { method: "POST", body: "{}" });
+  assert.equal(r.status, 501);
+  close();
+});
+
 test.after(() => upstream.close());
