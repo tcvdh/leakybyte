@@ -80,7 +80,7 @@ hi ![x]([blocked link to evil.example])
 URL: evil.example carries data in the query string
 
 $ npm test
-ℹ pass 10   ℹ fail 0`;
+ℹ pass 11   ℹ fail 0`;
 
 function Code({ children }: { children: string }) {
   return (

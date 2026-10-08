@@ -6,7 +6,7 @@ export type Finding = { type: "URL" | "HIDDEN_TEXT" | "SECRET"; detail: string }
 // Zero-width, bidi/format controls and the Unicode "tag" block, all used to smuggle invisible text.
 const HIDDEN = /[​-‏‪-‮⁠-⁤\u{E0000}-\u{E007F}]/gu;
 // http(s) URLs in any letter case, plus protocol-relative //host/path.
-const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})[^\s<>"'`]+/gi; // scans past ) and ]: markdown allows balanced parens in a link target
+const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})(?:[^\s<>"'`]|[\t\r\n]+(?=[^\s<>"'`]))+/gi; // scans past ) and ] (markdown allows balanced parens in a target) and across tab/newline (browsers delete them in URLs)
 // Text right before an auto-fetched image URL: ![alt](, ![alt](<, <img src=, or a reference definition [id]:
 const IMG_BEFORE = /(?:!\[[^\]]*\]\(\s*<?|<img[^>]*\ssrc\s*=\s*["']?|^[ ]{0,3}\[[^\]]+\]:\s*<?)$/im;
 const BLOB = /[A-Za-z0-9+/_=-]{20,}/; // long base64/hex-looking run
@@ -14,6 +14,7 @@ const BLOB = /[A-Za-z0-9+/_=-]{20,}/; // long base64/hex-looking run
 const normHost = (h: string) => h.toLowerCase().replace(/\.$/, "");
 
 function urlRisk(raw: string, allow: Set<string>, isImage: boolean) {
+  raw = raw.replace(/[\t\r\n]/g, ""); // what the browser's URL parser sees
   let u: URL;
   try { u = new URL(raw.replace(/^(?:https?:)?[/\\]*/i, (m) => (/^http:/i.test(m) ? "http://" : "https://"))); } catch { return { host: "unparseable", why: "is not a valid URL" }; } // fail closed
   const host = normHost(u.hostname);

