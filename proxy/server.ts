@@ -42,7 +42,7 @@ async function relayStream(up: Response, res: ServerResponse, vault: Map<string,
       pending = pending.slice(end + 2);
       const event = raw.match(/^event: (.*)$/m)?.[1] ?? "message";
       const data = raw.match(/^data: (.*)$/m)?.[1];
-      let j: { type?: string; index: number; delta?: Record<string, string> } | null;
+      let j: { type?: string; index: number; delta?: { type: string; [k: string]: string }; } | null;
       try { j = data ? JSON.parse(data) : null; } catch { j = null; }
       if (j?.type === "content_block_delta" && (j.delta?.type === "text_delta" || j.delta?.type === "input_json_delta")) {
         const field = j.delta.type === "text_delta" ? "text" : "partial_json";
