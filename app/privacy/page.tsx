@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage from "@/components/LegalPage";
-import { EMAIL, LEGAL } from "@/lib/site";
+import { EMAIL, OPERATOR } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Privacy policy | LeakyByte", description: "What personal data LeakyByte collects (very little), why, and your rights." };
 
@@ -14,7 +14,7 @@ export default function Page() {
         {
           title: "Who is responsible",
           body: (<>
-            <p>The controller of your personal data on this website is {LEGAL.name}, {LEGAL.address} (&ldquo;LeakyByte&rdquo;, &ldquo;we&rdquo;).</p>
+            <p>The controller of your personal data on this website is {OPERATOR} (&ldquo;LeakyByte&rdquo;, &ldquo;we&rdquo;).</p>
             <p>Contact for any privacy question: <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.</p>
           </>),
         },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage from "@/components/LegalPage";
-import { EMAIL, LEGAL, REPO } from "@/lib/site";
+import { EMAIL, LEGAL, OPERATOR, REPO } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Terms of use | LeakyByte", description: "The terms for using the LeakyByte website and tools." };
 
@@ -13,11 +13,11 @@ export default function Page() {
       sections={[
         {
           title: "Who we are",
-          body: (<p>LeakyByte is run by {LEGAL.name}, {LEGAL.address}. Contact: <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.</p>),
+          body: (<p>LeakyByte is run by {OPERATOR}. Contact: <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.</p>),
         },
         {
           title: "Early-stage software",
-          body: (<p>Our tools are early-stage. They are published at <a href={REPO}>{REPO}</a> and may change, break or be removed without notice. Do not rely on them as your only protection for sensitive data. The software is provided under the licence in the repository; if a file conflicts with these terms about the software itself, that licence controls.</p>),
+          body: (<p>Our tools are early-stage. They are published at <a href={REPO}>{REPO}</a> and may change, break or be removed without notice. Do not rely on them as your only protection for sensitive data. The source code is released under the MIT licence (see the LICENSE file in the repository). If these terms conflict with that licence about the software itself, the licence controls.</p>),
         },
         {
           title: "No guarantee of protection",
@@ -43,7 +43,7 @@ export default function Page() {
         },
         {
           title: "Intellectual property",
-          body: (<p>The LeakyByte name, logo and website design belong to us. The source code is available under the licence published in the repository. Content you type into the demos stays yours and stays on your device.</p>),
+          body: (<p>The LeakyByte name, logo and website design belong to us. The source code is available under the MIT licence. Content you type into the demos stays yours and stays on your device.</p>),
         },
         {
           title: "No warranty",

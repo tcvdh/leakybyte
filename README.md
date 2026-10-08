@@ -75,3 +75,7 @@ cli/       leakybyte.ts                     the command line
 app/ components/                            the website (Next.js)
 test/                                       node:test suites
 ```
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

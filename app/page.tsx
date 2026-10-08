@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Code from "@/components/Code";
+import HeroStream from "@/components/HeroStream";
 import Playground from "@/components/Playground";
 import { EMAIL, REPO } from "@/lib/site";
 
@@ -9,6 +10,13 @@ const products = [
   ["Canary", "In your data", "Mint fake keys that look real and plant them in configs, docs and prompts. If one shows up in a log or an output, you know where it leaked from."],
   ["Plug", "After the model", "Scans model output for ways data escapes: image links that carry data in the URL, invisible text, and secrets. It blocks them before your app renders the reply."],
 ] as const;
+
+const facts = [
+  ["Open source", "MIT licence, code on GitHub"],
+  ["Runs on your machine", "No LeakyByte server in the path"],
+  ["No runtime dependencies", "In the proxy and command line tool"],
+  ["Tested", "14 automated tests, run with npm test"],
+];
 
 const detects = [
   ["API keys", "Anthropic, AWS, GitHub, generic sk- keys"],
@@ -87,15 +95,32 @@ export default function Home() {
   return (
     <>
       <main>
-        <section id="try" className="mx-auto max-w-6xl scroll-mt-8 px-6 pb-20 pt-16 md:pt-24">
-          <h1 className="max-w-4xl font-display text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
-            Stop your AI app from leaking data.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-            Three small tools for teams building on Claude: one before the model, one in your data, one after the model.
-            Try each one below. Everything runs in your browser and nothing is sent anywhere.
-          </p>
-          <div className="mt-12"><Playground /></div>
+        <section id="try" className="hero-bg mx-auto max-w-6xl scroll-mt-8 px-6 pb-20 pt-12 md:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
+            <div>
+              <h1 className="font-display text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
+                Stop your AI app from leaking data.
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
+                Three small tools for teams building on Claude: one before the model, one in your data, one after the model.
+                Try each one below. Everything runs in your browser and nothing is sent anywhere.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a href="#playground" className="rounded bg-paper px-5 py-3 font-medium text-ink">Try the tools</a>
+                <Link href="/veil" className="rounded border border-edge px-5 py-3 font-medium hover:bg-raise">Read the setup guide</Link>
+              </div>
+            </div>
+            <HeroStream />
+          </div>
+          <dl className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-edge bg-edge text-sm md:grid-cols-4">
+            {facts.map(([k, v]) => (
+              <div key={k} className="bg-raise p-4">
+                <dt className="font-display text-base font-semibold">{k}</dt>
+                <dd className="mt-1 text-muted">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <div id="playground" className="mt-16 scroll-mt-8"><Playground /></div>
         </section>
 
         <section id="products" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20">

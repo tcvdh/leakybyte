@@ -29,5 +29,11 @@
   "type": "module",
   "engines": {
     "node": ">=22.18"
+  },
+  "license": "MIT",
+  "author": "Thijs van den Heuvel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tcvdh/leakybyte.git"
   }
 }

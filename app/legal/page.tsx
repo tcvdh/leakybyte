@@ -15,7 +15,7 @@ export default function Page() {
           title: "Operator",
           body: (<>
             <p><strong>{LEGAL.name}</strong></p>
-            <p>{LEGAL.address}</p>
+            {LEGAL.address ? <p>{LEGAL.address}</p> : <p>{LEGAL.country}</p>}
             {LEGAL.registration && <p>Registration number: {LEGAL.registration}</p>}
             {LEGAL.vat && <p>VAT ID: {LEGAL.vat}</p>}
           </>),

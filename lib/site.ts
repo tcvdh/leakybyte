@@ -9,13 +9,17 @@ export const PRODUCTS = [
 
 export const UPDATED = "8 October 2026";
 
-// Fill these in before launch. While any required value still starts with "[", legal pages show a draft banner.
 export const LEGAL = {
-  name: "[Legal name of the person or company that runs LeakyByte]",
-  address: "[Street, postcode, city, country]",
-  jurisdiction: "[Country or state whose law governs these terms]",
-  registration: "", // company registration number, if you have one (leave empty to hide)
-  vat: "", // VAT ID, if you have one (leave empty to hide)
+  name: "Thijs van den Heuvel",
+  country: "the Netherlands",
+  address: "", // optional postal address; leave empty to omit
+  jurisdiction: "the Netherlands",
+  registration: "", // company registration number (KvK), if you have one
+  vat: "", // VAT ID, if you have one
 };
 
-export const legalDraft = [LEGAL.name, LEGAL.address, LEGAL.jurisdiction].some((v) => v.startsWith("["));
+// "Name, address" when an address is set, otherwise "Name (country)".
+export const OPERATOR = LEGAL.address ? `${LEGAL.name}, ${LEGAL.address}` : `${LEGAL.name} (${LEGAL.country})`;
+
+// While a required value still starts with "[", legal pages show a draft banner.
+export const legalDraft = [LEGAL.name, LEGAL.jurisdiction].some((v) => v.startsWith("["));
