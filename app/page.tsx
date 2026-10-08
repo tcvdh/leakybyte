@@ -19,11 +19,27 @@ const detects = [
 const snippet = `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  baseURL: "http://localhost:8787", // LeakyByte proxy (in development)
+  baseURL: "http://127.0.0.1:8787", // LeakyByte proxy
 });
 
 // Everything else stays the same.
 const msg = await client.messages.create({ ... });`;
+
+const run = `$ npm install
+$ npm run proxy
+LeakyByte proxy on http://127.0.0.1:8787
+
+$ npm test
+✔ non-streaming: upstream sees placeholders, client gets real values
+✔ streaming: placeholder split across deltas is restored
+✔ redacts, reuses placeholders, skips invalid cards, restores
+ℹ pass 3   ℹ fail 0`;
+
+const flow = [
+  ["Your app", "Email dana.reyes@northwind.example about key sk-ant-api03-Zk3v…", false],
+  ["LeakyByte proxy", "Email ‹EMAIL_1› about key ‹ANTHROPIC_KEY_1›", true],
+  ["Claude API", "Will email ‹EMAIL_1›.", true],
+] as const;
 
 export default function Home() {
   return (
@@ -34,7 +50,7 @@ export default function Home() {
         </a>
         <nav className="flex items-center gap-6 text-sm text-muted">
           <a className="hover:text-paper" href="#how">How it works</a>
-          <a className="hover:text-paper" href="#build">Build</a>
+          <a className="hover:text-paper" href="#build">Use it</a>
           <a className="rounded bg-paper px-3 py-1.5 font-medium text-ink" href="#access">Early access</a>
         </nav>
       </header>
@@ -62,14 +78,26 @@ export default function Home() {
               </li>
             ))}
           </ol>
+          <div className="mt-14 grid gap-px overflow-hidden rounded-lg border border-edge bg-edge md:grid-cols-3">
+            {flow.map(([who, text, masked]) => (
+              <div key={who} className="bg-raise p-5">
+                <p className="font-display text-sm font-semibold text-muted">{who}</p>
+                <p className="mt-3 font-mono text-sm leading-relaxed">
+                  {masked ? <span className="bar whitespace-normal">{text}</span> : text}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muted">The reply travels back the same way: placeholders in, real values out.</p>
         </section>
 
         <section id="build" className="mx-auto grid max-w-6xl scroll-mt-8 gap-12 px-6 py-20 md:grid-cols-2">
           <div>
             <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">One line to adopt</h2>
             <p className="mt-4 max-w-md leading-relaxed text-muted">
-              The proxy speaks the same API as Claude, so changing the base URL is the whole integration. The detection engine
-              behind the demo above is the same code the proxy will use.
+              The proxy speaks the Claude Messages API, including streaming, so changing the base URL is the whole integration.
+              Your Anthropic key passes straight through and is never stored. The audit log records what kinds of values were
+              swapped, never the values.
             </p>
             <dl className="mt-8 space-y-3">
               {detects.map(([k, v]) => (
@@ -85,13 +113,19 @@ export default function Home() {
           </pre>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 py-20">
-          <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Where we are</h2>
-          <p className="mt-4 max-w-2xl leading-relaxed text-muted">
-            LeakyByte is an early-stage project. The detection engine and the demo on this page work today. The proxy, audit
-            log and dashboard are in development, and we are building with Claude Code. We are looking for a few teams
-            shipping Claude-powered products to shape what comes next.
-          </p>
+        <section className="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-2">
+          <div>
+            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Where we are</h2>
+            <p className="mt-4 max-w-md leading-relaxed text-muted">
+              LeakyByte is early. The proxy runs locally today: it redacts requests, restores replies in both normal and
+              streaming responses, and writes an audit log. The test suite runs it against a mock Claude server. Still to
+              come: a hosted version, a dashboard for the audit log, custom detectors, and wider checks against the live API.
+              We build with Claude Code.
+            </p>
+          </div>
+          <pre className="self-start overflow-x-auto rounded-lg border border-edge bg-raise p-5 font-mono text-sm leading-relaxed">
+            <code>{run}</code>
+          </pre>
         </section>
 
         <section id="access" className="mx-auto max-w-6xl scroll-mt-8 px-6 pb-28 pt-12">

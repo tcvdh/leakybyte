@@ -43,39 +43,39 @@ export function detect(text: string): Span[] {
   return taken.sort((a, b) => a.start - b.start);
 }
 
-export function redact(text: string) {
-  const vault = new Map<string, string>(); // placeholder -> original
-  const seen = new Map<string, string>(); // original -> placeholder (same value, same token)
-  const counts: Partial<Record<Kind, number>> = {};
+export type Part = { text: string; token?: string; kind?: Kind };
+
+// A vault is shared across many strings so one request gets consistent placeholders.
+export function createVault() {
+  return { vault: new Map<string, string>(), seen: new Map<string, string>(), counts: {} as Partial<Record<Kind, number>> };
+}
+export type Vault = ReturnType<typeof createVault>;
+
+export function redactWith(v: Vault, text: string) {
   let out = "", last = 0;
-  const parts: { text: string; token?: string; kind?: Kind }[] = [];
+  const parts: Part[] = [];
   for (const s of detect(text)) {
-    let token = seen.get(s.value);
+    let token = v.seen.get(s.value); // same value, same placeholder
     if (!token) {
-      counts[s.kind] = (counts[s.kind] ?? 0) + 1;
-      token = `‹${s.kind}_${counts[s.kind]}›`;
-      seen.set(s.value, token);
-      vault.set(token, s.value);
+      v.counts[s.kind] = (v.counts[s.kind] ?? 0) + 1;
+      token = `‹${s.kind}_${v.counts[s.kind]}›`;
+      v.seen.set(s.value, token);
+      v.vault.set(token, s.value);
     }
     parts.push({ text: text.slice(last, s.start) }, { text: s.value, token, kind: s.kind });
     out += text.slice(last, s.start) + token;
     last = s.end;
   }
   parts.push({ text: text.slice(last) });
-  out += text.slice(last);
-  return { text: out, vault, parts };
+  return { text: out + text.slice(last), parts };
+}
+
+export function redact(text: string) {
+  const v = createVault();
+  const { text: out, parts } = redactWith(v, text);
+  return { text: out, vault: v.vault, parts };
 }
 
 export function restore(text: string, vault: Map<string, string>) {
   return text.replace(/‹[A-Z_]+_\d+›/g, (t) => vault.get(t) ?? t);
-}
-
-// Run: npx tsx lib/redact.ts
-if (typeof process !== "undefined" && process.argv[1]?.endsWith("redact.ts")) {
-  const assert = require("node:assert") as typeof import("node:assert");
-  const input = "Mail ana@acme.io, again ana@acme.io. key sk-ant-api03-abcdefghijklmnopqrstuvwx card 4242 4242 4242 4242 not 4242 4242 4242 4243 ip 10.0.0.12";
-  const r = redact(input);
-  assert.equal(r.text, "Mail ‹EMAIL_1›, again ‹EMAIL_1›. key ‹ANTHROPIC_KEY_1› card ‹CARD_1› not 4242 4242 4242 4243 ip ‹IP_1›");
-  assert.equal(restore(r.text, r.vault), input);
-  console.log("redact ok");
 }
