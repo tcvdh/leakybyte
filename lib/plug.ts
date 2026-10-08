@@ -5,33 +5,54 @@ export type Finding = { type: "URL" | "HIDDEN_TEXT" | "SECRET"; detail: string }
 
 // Zero-width, bidi/format controls and the Unicode "tag" block, all used to smuggle invisible text.
 const HIDDEN = /[​-‏‪-‮⁠-⁤\u{E0000}-\u{E007F}]/gu;
-const URLS = /https?:\/\/[^\s)>\]"'`]+/g;
+// http(s) URLs in any letter case, plus protocol-relative //host/path.
+const URLS = /(?:https?:\/\/|(?<![\w:/.])\/\/)[^\s)>\]"'`]+/gi;
+// Text right before an auto-fetched image URL: ![alt](, ![alt](<, <img src=, or a reference definition [id]:
+const IMG_BEFORE = /(?:!\[[^\]]*\]\(\s*<?|<img[^>]*\ssrc\s*=\s*["']?|^[ ]{0,3}\[[^\]]+\]:\s*<?)$/im;
 const BLOB = /[A-Za-z0-9+/_=-]{20,}/; // long base64/hex-looking run
 
-function urlRisk(raw: string, allow: Set<string>) {
+const normHost = (h: string) => h.toLowerCase().replace(/\.$/, "");
+
+function urlRisk(raw: string, allow: Set<string>, isImage: boolean) {
   let u: URL;
-  try { u = new URL(raw); } catch { return null; }
-  if (allow.has(u.hostname)) return null;
-  const params = [...u.searchParams.values()].join("");
-  if (BLOB.test(params) || params.length > 40) return "carries data in the query string";
-  if (u.pathname.split("/").some((p) => BLOB.test(p) && p.length >= 32)) return "carries an encoded blob in the path";
-  if (detect(decodeURIComponent(u.search + u.pathname)).length) return "contains a secret or personal data";
-  return null;
+  try { u = new URL(raw.startsWith("//") ? "https:" + raw : raw); } catch { return { host: "unparseable", why: "is not a valid URL" }; } // fail closed
+  const host = normHost(u.hostname);
+  if (allow.has(host)) return null;
+  const data = [...u.searchParams.values()].join("") + u.hash + u.username + u.password;
+  const why =
+    isImage ? "is an image from an untrusted host (images load automatically)"
+    : BLOB.test(data) || data.length > 40 ? "carries data in the query, fragment or login"
+    : host.split(".").some((l) => BLOB.test(l)) ? "hides data in the hostname"
+    : u.pathname.length > 200 || u.pathname.split("/").some((p) => BLOB.test(p) && p.length >= 32) ? "carries an encoded blob in the path"
+    : detect(safeDecode(u.search + u.pathname + u.hash)).length ? "contains a secret or personal data"
+    : null;
+  return why && { host, why };
 }
 
+const NAMED: Record<string, string> = { colon: ":", sol: "/", period: ".", amp: "&", quest: "?", num: "#", lpar: "(", rpar: ")" };
+const decodeEntities = (t: string) =>
+  t.replace(/&#(x[0-9a-f]+|\d+);?|&([a-z]+);/gi, (m, n: string | undefined, name: string | undefined) => {
+    if (name) return NAMED[name.toLowerCase()] ?? m;
+    const cp = n![0].toLowerCase() === "x" ? parseInt(n!.slice(1), 16) : parseInt(n!, 10);
+    return cp <= 0x10ffff ? String.fromCodePoint(cp) : m;
+  });
+
+const safeDecode = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
+
 export function plug(text: string, allowHosts: string[] = []) {
-  const allow = new Set(allowHosts.map((h) => h.trim().toLowerCase()).filter(Boolean));
+  const allow = new Set(allowHosts.map((h) => normHost(h.trim())).filter(Boolean));
   const findings: Finding[] = [];
 
-  let out = text.replace(HIDDEN, () => "");
-  const hidden = text.length - out.length;
+  // Markdown/HTML decode entities before building links, so scan the decoded form.
+  let out = decodeEntities(text).replace(HIDDEN, () => "");
+  const hidden = (text.match(HIDDEN) ?? []).length;
   if (hidden) findings.push({ type: "HIDDEN_TEXT", detail: `${hidden} invisible character${hidden > 1 ? "s" : ""} removed` });
 
-  out = out.replace(URLS, (url) => {
-    const why = urlRisk(url, allow);
-    if (!why) return url;
-    findings.push({ type: "URL", detail: `${new URL(url).hostname} ${why}` });
-    return `[blocked link to ${new URL(url).hostname}]`;
+  out = out.replace(URLS, (url, offset: number, whole: string) => {
+    const risk = urlRisk(url, allow, IMG_BEFORE.test(whole.slice(0, offset)));
+    if (!risk) return url;
+    findings.push({ type: "URL", detail: `${risk.host} ${risk.why}` });
+    return `[blocked link to ${risk.host}]`;
   });
 
   let last = 0, clean = "";
