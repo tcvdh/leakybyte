@@ -6,7 +6,7 @@ export type Finding = { type: "URL" | "HIDDEN_TEXT" | "SECRET"; detail: string }
 // Zero-width, bidi/format controls and the Unicode "tag" block, all used to smuggle invisible text.
 const HIDDEN = /[​-‏‪-‮⁠-⁤\u{E0000}-\u{E007F}]/gu;
 // http(s) URLs in any letter case, plus protocol-relative //host/path.
-const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})(?:[^\s<>"'`]|(?<![)\].,;:!?])[\t\r\n]+(?=[^\s<>"'`]))+/gi; // scans past ) and ] (markdown allows balanced parens in a target) and across tab/newline (browsers delete them in URLs)
+const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})(?:[^\s<>"'`]|[\t\r\n]+(?=[^\s<>"'`]))+/gi; // scans past ) and ] (markdown allows balanced parens in a target) and across tab/newline (browsers delete them in URLs)
 // Text right before an auto-fetched image URL: ![alt](, ![alt](<, <img src=, or a reference definition [id]:
 const IMG_BEFORE = /(?:!\[[^\]]*\]\(\s*<?|<img[^>]*\ssrc\s*=\s*["']?|^[ ]{0,3}\[[^\]]+\]:\s*<?)$/im;
 const BLOB = /[A-Za-z0-9+/_=-]{20,}/; // long base64/hex-looking run
@@ -52,12 +52,16 @@ export function plug(text: string, allowHosts: string[] = []) {
   if (hidden) findings.push({ type: "HIDDEN_TEXT", detail: `${hidden} invisible character${hidden > 1 ? "s" : ""} removed` });
 
   out = out.replace(URLS, (match, offset: number, whole: string) => {
-    const trail = match.match(/[)\]\.,;:!?]+$/)?.[0] ?? ""; // keep markdown/sentence punctuation outside the link
-    const url = match.slice(0, match.length - trail.length);
+    // Judge the URL as a browser reads it (breaks removed, whole token), but only rewrite its first line,
+    // so a legitimate line that follows a link in markdown is not swallowed.
+    const brk = match.search(/[\t\r\n]/);
+    const head = brk < 0 ? match : match.slice(0, brk);
+    const rest = brk < 0 ? "" : match.slice(brk);
+    const url = match.replace(/[\t\r\n]/g, "").replace(/[)\].,;:!?]+$/, ""); // keep markdown/sentence punctuation outside the link
     const risk = urlRisk(url, allow, IMG_BEFORE.test(whole.slice(0, offset)));
     if (!risk) return match;
     findings.push({ type: "URL", detail: `${risk.host} ${risk.why}` });
-    return `[blocked link to ${risk.host}]${trail}`;
+    return `[blocked link to ${risk.host}]${head.match(/[)\].,;:!?]+$/)?.[0] ?? ""}${rest}`;
   });
 
   let last = 0, clean = "";

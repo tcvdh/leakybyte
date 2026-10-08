@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { REPO } from "@/lib/site";
 import "./globals.css";
 
 const head = Bricolage_Grotesque({ variable: "--font-head", subsets: ["latin"] });
@@ -21,9 +21,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-screen">
         <SiteHeader />
         {children}
-        <footer className="mx-auto max-w-6xl px-6 pb-10 text-sm text-muted">
-          © 2026 LeakyByte. Not affiliated with Anthropic. <a className="underline" href={REPO}>Source on GitHub</a>.
-        </footer>
+        <SiteFooter />
       </body>
     </html>
   );
