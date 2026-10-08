@@ -1,69 +1,120 @@
-import Image from "next/image";
+import Demo from "@/components/Demo";
+
+const EMAIL = "hello@leakybyte.xyz";
+
+const steps = [
+  ["Intercept", "Point your Claude SDK at the LeakyByte proxy. Prompts, tool results and attached text pass through it."],
+  ["Swap", "Secrets and personal data are replaced with stable placeholders. The same value always gets the same placeholder, so Claude can still reason about it."],
+  ["Restore", "Placeholders in Claude's reply are swapped back before your app sees it. Every swap is written to an audit log."],
+];
+
+const detects = [
+  ["API keys", "Anthropic, AWS, GitHub, generic sk- keys"],
+  ["Tokens", "JWTs"],
+  ["Contact details", "Emails, phone numbers"],
+  ["Financial", "Card numbers (Luhn-checked)"],
+  ["Identity and network", "US SSNs, IPv4 addresses"],
+];
+
+const snippet = `import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "http://localhost:8787", // LeakyByte proxy (in development)
+});
+
+// Everything else stays the same.
+const msg = await client.messages.create({ ... });`;
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <>
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+        <a href="#" className="font-display text-xl font-bold tracking-tight">
+          Leaky<span className="bar font-display">Byte</span>
+        </a>
+        <nav className="flex items-center gap-6 text-sm text-muted">
+          <a className="hover:text-paper" href="#how">How it works</a>
+          <a className="hover:text-paper" href="#build">Build</a>
+          <a className="rounded bg-paper px-3 py-1.5 font-medium text-ink" href="#access">Early access</a>
+        </nav>
+      </header>
+
+      <main>
+        <section className="mx-auto max-w-6xl px-6 pb-20 pt-16 md:pt-24">
+          <h1 className="max-w-4xl font-display text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
+            Keep secrets out of your prompts.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
+            LeakyByte sits between your app and the Claude API. It swaps API keys and personal data for placeholders on the
+            way out, and puts them back in the reply. Try it below. This runs in your browser; nothing is sent anywhere.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <div className="mt-12"><Demo /></div>
+        </section>
+
+        <section id="how" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20">
+          <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Three steps, no app rewrite</h2>
+          <ol className="mt-10 grid gap-10 md:grid-cols-3">
+            {steps.map(([t, d], i) => (
+              <li key={t} className="border-t border-edge pt-5">
+                <span className="font-mono text-sm text-lit">Step {i + 1}</span>
+                <h3 className="mt-2 font-display text-xl font-semibold">{t}</h3>
+                <p className="mt-2 max-w-sm leading-relaxed text-muted">{d}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="build" className="mx-auto grid max-w-6xl scroll-mt-8 gap-12 px-6 py-20 md:grid-cols-2">
+          <div>
+            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">One line to adopt</h2>
+            <p className="mt-4 max-w-md leading-relaxed text-muted">
+              The proxy speaks the same API as Claude, so changing the base URL is the whole integration. The detection engine
+              behind the demo above is the same code the proxy will use.
+            </p>
+            <dl className="mt-8 space-y-3">
+              {detects.map(([k, v]) => (
+                <div key={k} className="flex gap-4 border-t border-edge pt-3 text-sm">
+                  <dt className="w-40 shrink-0 font-medium">{k}</dt>
+                  <dd className="text-muted">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <pre className="self-start overflow-x-auto rounded-lg border border-edge bg-raise p-5 font-mono text-sm leading-relaxed">
+            <code>{snippet}</code>
+          </pre>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-6 py-20">
+          <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Where we are</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+            LeakyByte is an early-stage project. The detection engine and the demo on this page work today. The proxy, audit
+            log and dashboard are in development, and we are building with Claude Code. We are looking for a few teams
+            shipping Claude-powered products to shape what comes next.
+          </p>
+        </section>
+
+        <section id="access" className="mx-auto max-w-6xl scroll-mt-8 px-6 pb-28 pt-12">
+          <div className="rounded-lg bg-paper p-8 text-ink md:p-12">
+            <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight md:text-5xl">
+              Shipping on Claude? Help us shape this.
+            </h2>
+            <p className="mt-4 max-w-xl leading-relaxed">
+              Tell us what your app sends to the model and what worries you about it. We reply to every message.
+            </p>
+            <a
+              href={`mailto:${EMAIL}?subject=LeakyByte%20early%20access`}
+              className="mt-8 inline-block rounded bg-ink px-5 py-3 font-medium text-paper"
+            >
+              Email {EMAIL}
+            </a>
+          </div>
+        </section>
       </main>
-    </div>
+
+      <footer className="mx-auto max-w-6xl px-6 pb-10 text-sm text-muted">
+        © 2026 LeakyByte. Not affiliated with Anthropic.
+      </footer>
+    </>
   );
 }

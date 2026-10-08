@@ -1,26 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #0a1224;
+  --raise: #101a33;
+  --line: #22305200;
+  --paper: #e8ebf3;
+  --muted: #8f9ab4;
+  --lit: #6fd3ff;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-raise: var(--raise);
+  --color-paper: var(--paper);
+  --color-muted: var(--muted);
+  --color-lit: var(--lit);
+  --color-edge: #223052;
+  --font-sans: var(--font-body);
+  --font-display: var(--font-head);
+  --font-mono: var(--font-code);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html { background: var(--ink); color: var(--paper); scroll-behavior: smooth; }
+body { font-family: var(--font-sans), system-ui, sans-serif; }
+::selection { background: var(--paper); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--lit); outline-offset: 3px; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* The one signature element: a value under a redaction bar. */
+.bar { background: var(--paper); color: var(--ink); border-radius: 2px; padding: 0 .35em; font-family: var(--font-code), monospace; font-size: .92em; white-space: nowrap; }
+.secret { background: #ff6b6b33; box-shadow: inset 0 -2px 0 #ff6b6b; border-radius: 2px; }
+.unbar { color: var(--lit); box-shadow: inset 0 -2px 0 var(--lit); }
+
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
