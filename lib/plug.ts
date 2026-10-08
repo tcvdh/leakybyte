@@ -3,9 +3,10 @@ import { detect } from "./redact.ts";
 
 export type Finding = { type: "URL" | "HIDDEN_TEXT" | "SECRET"; detail: string };
 
-// Zero-width, bidi/format controls and the Unicode "tag" block, all used to smuggle invisible text.
-const HIDDEN = /[​-‏‪-‮⁠-⁤\u{E0000}-\u{E007F}]/gu;
-// http(s) URLs in any letter case, plus protocol-relative //host/path.
+// Zero-width, bidi/format controls, the Unicode "tag" block, supplementary variation selectors, BOM,
+// soft hyphen and invisible Hangul fillers: all used to smuggle invisible text.
+// (Plain U+FE0F is left alone because emoji need it.)
+const HIDDEN = /[\u00AD\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u3164\uFEFF\u{E0000}-\u{E007F}\u{E0100}-\u{E01EF}]/gu;
 const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})(?:[^\s<>"'`]|[\t\r\n]+(?=[^\s<>"'`]))+/gi; // scans past ) and ] (markdown allows balanced parens in a target) and across tab/newline (browsers delete them in URLs)
 // Text right before an auto-fetched image URL: ![alt](, ![alt](<, <img src=, or a reference definition [id]:
 const IMG_BEFORE = /(?:!\[[^\]]*\]\(\s*<?|<img[^>]*\ssrc\s*=\s*["']?|^[ ]{0,3}\[[^\]]+\]:\s*<?)$/im;

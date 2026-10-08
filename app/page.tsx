@@ -81,7 +81,7 @@ hi ![x]([blocked link to evil.example])
 URL: evil.example carries data in the query string
 
 $ npm test
-ℹ pass 13   ℹ fail 0`;
+ℹ pass 14   ℹ fail 0`;
 
 export default function Home() {
   return (
