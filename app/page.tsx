@@ -1,6 +1,7 @@
 import Playground from "@/components/Playground";
 
 const EMAIL = "hello@leakybyte.xyz";
+const REPO = "https://github.com/tcvdh/leakybyte";
 
 const products = [
   ["Veil", "Before the model", "A proxy for the Claude API. It swaps API keys and personal data for placeholders on the way out and restores them in the reply."],
@@ -16,6 +17,12 @@ const detects = [
   ["Identity and network", "US SSNs, IPv4 addresses"],
 ];
 
+const install = `git clone ${REPO}.git
+cd leakybyte
+npm install
+npm run proxy
+# LeakyByte proxy on http://127.0.0.1:8787`;
+
 const snippet = `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
@@ -24,6 +31,43 @@ const client = new Anthropic({
 
 // Everything else stays the same.
 const msg = await client.messages.create({ ... });`;
+
+const python = `import anthropic
+
+client = anthropic.Anthropic(base_url="http://127.0.0.1:8787")`;
+
+const curl = `curl -i http://127.0.0.1:8787/v1/messages \\
+  -H "x-api-key: $ANTHROPIC_API_KEY" \\
+  -H "anthropic-version: 2023-06-01" \\
+  -H "content-type: application/json" \\
+  -d '{"model":"claude-sonnet-5-5","max_tokens":200,
+       "messages":[{"role":"user","content":"Email dana@acme.io about the outage"}]}'
+
+# The reply has your real address back in it, and the response
+# includes the header:  x-leakybyte-redacted: 1`;
+
+const env = [
+  ["PORT", "8787", "Port the proxy listens on (127.0.0.1 only)."],
+  ["LEAKYBYTE_UPSTREAM", "https://api.anthropic.com", "Where redacted requests are forwarded."],
+  ["LEAKYBYTE_AUDIT", "leakybyte-audit.jsonl", "Audit log path. One JSON line per request: time, model, counts per kind. Never the values."],
+  ["LEAKYBYTE_CANARY_KEY", "none", "Secret string for the Canary CLI. Only you should know it."],
+] as const;
+
+const faq = [
+  ["Where does my data go?", "The demos on this page run in your browser and send nothing anywhere. The proxy runs on your machine and forwards redacted requests to the Claude API (or whatever LEAKYBYTE_UPSTREAM points to). Your Anthropic key is passed through and never stored. There is no LeakyByte server in the path."],
+  ["What does it not catch?", "Detection is pattern-based. It finds keys, tokens, emails, phone numbers, card numbers, US SSNs and IPv4 addresses. It does not find names, street addresses or free-text personal details. A secret split across two separate text blocks is not matched either."],
+  ["Does streaming and tool use work?", "Yes. Veil restores placeholders in streamed text and in streamed tool-call JSON, including when a placeholder is split across chunks. The test suite covers this against a mock Claude server. It has not yet been validated at scale against the live API."],
+  ["Is Plug a guarantee?", "No. It blocks the common ways model output carries data out (image and link URLs, hidden characters, secrets). Treat it as one layer, and also set a strict content security policy where you render model output."],
+  ["Is this ready for production?", "Not yet. It is early software that runs locally. There is no hosted version, dashboard or access control yet."],
+] as const;
+
+const roadmap = [
+  "Run Plug and Canary checks inside the proxy, including on streamed replies",
+  "Detect names and addresses, with Claude as an optional classifier",
+  "A hosted version and a dashboard for the audit log",
+  "Custom detectors per team",
+  "Wider testing against the live Claude API",
+];
 
 const cli = `$ npm run lb canary mint prod aws
 AKIAPRODC3EDOIU4P2TK
@@ -36,7 +80,15 @@ hi ![x]([blocked link to evil.example])
 URL: evil.example carries data in the query string
 
 $ npm test
-ℹ pass 8   ℹ fail 0`;
+ℹ pass 9   ℹ fail 0`;
+
+function Code({ children }: { children: string }) {
+  return (
+    <pre className="mt-3 overflow-x-auto rounded-lg border border-edge bg-raise p-5 font-mono text-sm leading-relaxed">
+      <code>{children}</code>
+    </pre>
+  );
+}
 
 export default function Home() {
   return (
@@ -48,7 +100,8 @@ export default function Home() {
         <nav className="flex items-center gap-6 text-sm text-muted">
           <a className="hover:text-paper" href="#try">Try it</a>
           <a className="hover:text-paper" href="#products">Products</a>
-          <a className="hover:text-paper" href="#use">Use it</a>
+          <a className="hover:text-paper" href="#start">Get started</a>
+          <a className="hover:text-paper" href={REPO}>GitHub</a>
           <a className="rounded bg-paper px-3 py-1.5 font-medium text-ink" href="#access">Early access</a>
         </nav>
       </header>
@@ -82,26 +135,61 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="use" className="mx-auto grid max-w-6xl scroll-mt-8 gap-12 px-6 py-20 md:grid-cols-2">
-          <div>
-            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Veil is one line to adopt</h2>
-            <p className="mt-4 max-w-md leading-relaxed text-muted">
-              The proxy speaks the Claude Messages API, including streaming, so changing the base URL is the whole integration.
-              Your Anthropic key passes straight through and is never stored. The audit log records what kinds of values were
-              swapped, never the values.
-            </p>
-            <dl className="mt-8 space-y-3">
-              {detects.map(([k, v]) => (
-                <div key={k} className="flex gap-4 border-t border-edge pt-3 text-sm">
-                  <dt className="w-40 shrink-0 font-medium">{k}</dt>
-                  <dd className="text-muted">{v}</dd>
-                </div>
-              ))}
-            </dl>
+        <section id="start" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20">
+          <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Get started in two minutes</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+            You need Node 22.18 or newer. There is no build step and no runtime dependencies for the proxy and CLI.
+          </p>
+          <div className="mt-10 grid gap-10 md:grid-cols-2">
+            <div>
+              <h3 className="font-display text-xl font-semibold">1. Run the proxy</h3>
+              <Code>{install}</Code>
+              <h3 className="mt-8 font-display text-xl font-semibold">2. Point your app at it</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">Change the base URL. Nothing else in your code changes.</p>
+              <Code>{snippet}</Code>
+              <Code>{python}</Code>
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-semibold">Or try it with curl</h3>
+              <Code>{curl}</Code>
+              <h3 className="mt-8 font-display text-xl font-semibold">What Veil detects</h3>
+              <dl className="mt-3 space-y-3">
+                {detects.map(([k, v]) => (
+                  <div key={k} className="flex gap-4 border-t border-edge pt-3 text-sm">
+                    <dt className="w-40 shrink-0 font-medium">{k}</dt>
+                    <dd className="text-muted">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
-          <pre className="self-start overflow-x-auto rounded-lg border border-edge bg-raise p-5 font-mono text-sm leading-relaxed">
-            <code>{snippet}</code>
-          </pre>
+
+          <h3 className="mt-14 font-display text-xl font-semibold">Settings</h3>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-muted"><tr><th className="py-2 pr-6 font-medium">Variable</th><th className="py-2 pr-6 font-medium">Default</th><th className="py-2 font-medium">What it does</th></tr></thead>
+              <tbody>
+                {env.map(([k, d, w]) => (
+                  <tr key={k} className="border-t border-edge align-top">
+                    <td className="py-3 pr-6 font-mono">{k}</td>
+                    <td className="py-3 pr-6 font-mono text-muted">{d}</td>
+                    <td className="py-3 text-muted">{w}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-2">
+          <div>
+            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Canary and Plug from the command line</h2>
+            <p className="mt-4 max-w-md leading-relaxed text-muted">
+              Both run as a CLI today. Pipe any text into them: logs, a model reply, a file. Exit code 2 means a canary
+              was found, so you can use it in CI.
+            </p>
+          </div>
+          <Code>{cli}</Code>
         </section>
 
         <section className="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-2">
@@ -109,14 +197,24 @@ export default function Home() {
             <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Where we are</h2>
             <p className="mt-4 max-w-md leading-relaxed text-muted">
               LeakyByte is early. All three tools work today, in the browser and from a command line. Veil also runs as a local
-              proxy that restores replies in normal and streaming responses and writes an audit log. The tests run the proxy
-              against a mock Claude server. Still to come: Plug and Canary checks inside the proxy, a hosted version, a
-              dashboard, and wider checks against the live API. We build with Claude Code.
+              proxy with an audit log. The tests run the proxy against a mock Claude server. We build with Claude Code.
             </p>
+            <h3 className="mt-8 font-display text-xl font-semibold">Next</h3>
+            <ul className="mt-3 space-y-2 text-muted">
+              {roadmap.map((r) => <li key={r} className="border-t border-edge pt-2">{r}</li>)}
+            </ul>
           </div>
-          <pre className="self-start overflow-x-auto rounded-lg border border-edge bg-raise p-5 font-mono text-sm leading-relaxed">
-            <code>{cli}</code>
-          </pre>
+          <div>
+            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Questions</h2>
+            <dl className="mt-6 space-y-6">
+              {faq.map(([q, a]) => (
+                <div key={q}>
+                  <dt className="font-display text-lg font-semibold">{q}</dt>
+                  <dd className="mt-1 leading-relaxed text-muted">{a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </section>
 
         <section id="access" className="mx-auto max-w-6xl scroll-mt-8 px-6 pb-28 pt-12">
@@ -138,7 +236,7 @@ export default function Home() {
       </main>
 
       <footer className="mx-auto max-w-6xl px-6 pb-10 text-sm text-muted">
-        © 2026 LeakyByte. Not affiliated with Anthropic.
+        © 2026 LeakyByte. Not affiliated with Anthropic. <a className="underline" href={REPO}>Source on GitHub</a>.
       </footer>
     </>
   );

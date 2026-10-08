@@ -6,7 +6,7 @@ export type Finding = { type: "URL" | "HIDDEN_TEXT" | "SECRET"; detail: string }
 // Zero-width, bidi/format controls and the Unicode "tag" block, all used to smuggle invisible text.
 const HIDDEN = /[​-‏‪-‮⁠-⁤\u{E0000}-\u{E007F}]/gu;
 // http(s) URLs in any letter case, plus protocol-relative //host/path.
-const URLS = /(?:https?:\/\/|(?<![\w:/.])\/\/)[^\s)>\]"'`]+/gi;
+const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})[^\s)>\]"'`]+/gi;
 // Text right before an auto-fetched image URL: ![alt](, ![alt](<, <img src=, or a reference definition [id]:
 const IMG_BEFORE = /(?:!\[[^\]]*\]\(\s*<?|<img[^>]*\ssrc\s*=\s*["']?|^[ ]{0,3}\[[^\]]+\]:\s*<?)$/im;
 const BLOB = /[A-Za-z0-9+/_=-]{20,}/; // long base64/hex-looking run
@@ -15,7 +15,7 @@ const normHost = (h: string) => h.toLowerCase().replace(/\.$/, "");
 
 function urlRisk(raw: string, allow: Set<string>, isImage: boolean) {
   let u: URL;
-  try { u = new URL(raw.startsWith("//") ? "https:" + raw : raw); } catch { return { host: "unparseable", why: "is not a valid URL" }; } // fail closed
+  try { u = new URL(raw.replace(/^(?:https?:)?[/\\]*/i, (m) => (/^http:/i.test(m) ? "http://" : "https://"))); } catch { return { host: "unparseable", why: "is not a valid URL" }; } // fail closed
   const host = normHost(u.hostname);
   if (allow.has(host)) return null;
   const data = [...u.searchParams.values()].join("") + u.hash + u.username + u.password;
@@ -29,12 +29,14 @@ function urlRisk(raw: string, allow: Set<string>, isImage: boolean) {
   return why && { host, why };
 }
 
-const NAMED: Record<string, string> = { colon: ":", sol: "/", period: ".", amp: "&", quest: "?", num: "#", lpar: "(", rpar: ")" };
+// Decode only entities that become plain URL characters. Never produce < > " ' or &, so the
+// sanitized output can't gain markup that wasn't already there.
+const NAMED: Record<string, string> = { colon: ":", sol: "/", period: ".", quest: "?", num: "#", bsol: "\\" };
+const URL_SAFE = /^[A-Za-z0-9:/.?#=%_~+@\\-]$/;
 const decodeEntities = (t: string) =>
   t.replace(/&#(x[0-9a-f]+|\d+);?|&([a-z]+);/gi, (m, n: string | undefined, name: string | undefined) => {
-    if (name) return NAMED[name.toLowerCase()] ?? m;
-    const cp = n![0].toLowerCase() === "x" ? parseInt(n!.slice(1), 16) : parseInt(n!, 10);
-    return cp <= 0x10ffff ? String.fromCodePoint(cp) : m;
+    const ch = name ? NAMED[name.toLowerCase()] : (() => { const cp = n![0].toLowerCase() === "x" ? parseInt(n!.slice(1), 16) : parseInt(n!, 10); return cp <= 0x7e ? String.fromCodePoint(cp) : undefined; })();
+    return ch !== undefined && URL_SAFE.test(ch) ? ch : m;
   });
 
 const safeDecode = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
