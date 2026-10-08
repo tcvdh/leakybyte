@@ -48,7 +48,7 @@ echo "mail ana@acme.io" | npm run lb redact
 export LEAKYBYTE_CANARY_KEY="something only you know"
 npm run lb canary mint prod aws                 # prints a fake key tagged PROD
 cat app.log | npm run lb canary check           # exit code 2 if a canary leaked
-echo "$MODEL_REPLY" | npm run lb plug --allow cdn.example.com
+echo "$MODEL_REPLY" | npm run lb -- plug --allow cdn.example.com
 ```
 
 ### Website and tests

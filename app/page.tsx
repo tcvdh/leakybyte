@@ -1,7 +1,8 @@
+import Link from "next/link";
+import Code from "@/components/Code";
 import Playground from "@/components/Playground";
+import { EMAIL, REPO } from "@/lib/site";
 
-const EMAIL = "hello@leakybyte.xyz";
-const REPO = "https://github.com/tcvdh/leakybyte";
 
 const products = [
   ["Veil", "Before the model", "A proxy for the Claude API. It swaps API keys and personal data for placeholders on the way out and restores them in the reply."],
@@ -80,32 +81,11 @@ hi ![x]([blocked link to evil.example])
 URL: evil.example carries data in the query string
 
 $ npm test
-ℹ pass 11   ℹ fail 0`;
-
-function Code({ children }: { children: string }) {
-  return (
-    <pre className="mt-3 overflow-x-auto rounded-lg border border-edge bg-raise p-5 font-mono text-sm leading-relaxed">
-      <code>{children}</code>
-    </pre>
-  );
-}
+ℹ pass 12   ℹ fail 0`;
 
 export default function Home() {
   return (
     <>
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <a href="#" className="font-display text-xl font-bold tracking-tight">
-          Leaky<span className="bar font-display">Byte</span>
-        </a>
-        <nav className="flex items-center gap-6 text-sm text-muted">
-          <a className="hover:text-paper" href="#try">Try it</a>
-          <a className="hover:text-paper" href="#products">Products</a>
-          <a className="hover:text-paper" href="#start">Get started</a>
-          <a className="hover:text-paper" href={REPO}>GitHub</a>
-          <a className="rounded bg-paper px-3 py-1.5 font-medium text-ink" href="#access">Early access</a>
-        </nav>
-      </header>
-
       <main>
         <section id="try" className="mx-auto max-w-6xl scroll-mt-8 px-6 pb-20 pt-16 md:pt-24">
           <h1 className="max-w-4xl font-display text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
@@ -126,11 +106,12 @@ export default function Home() {
           </p>
           <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-edge bg-edge md:grid-cols-3">
             {products.map(([name, where, desc]) => (
-              <div key={name} className="bg-raise p-6">
+              <Link key={name} href={`/${name.toLowerCase()}`} className="group bg-raise p-6 hover:bg-ink">
                 <p className="text-sm text-lit">{where}</p>
                 <h3 className="mt-2 font-display text-2xl font-bold">{name}</h3>
                 <p className="mt-3 leading-relaxed text-muted">{desc}</p>
-              </div>
+                <p className="mt-4 text-sm font-medium group-hover:underline">Setup guide and examples</p>
+              </Link>
             ))}
           </div>
         </section>
@@ -235,9 +216,6 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="mx-auto max-w-6xl px-6 pb-10 text-sm text-muted">
-        © 2026 LeakyByte. Not affiliated with Anthropic. <a className="underline" href={REPO}>Source on GitHub</a>.
-      </footer>
     </>
   );
 }
