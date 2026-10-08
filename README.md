@@ -1,3 +1,5 @@
+<img src="public/logo.svg" alt="LeakyByte logo" width="56" align="left">
+
 # LeakyByte
 
 Three tools that stop AI apps from leaking data, sharing one detection engine. Website: https://leakybyte.xyz

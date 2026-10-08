@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import Logo from "./Logo";
 import { PRODUCTS, REPO } from "@/lib/site";
 
 export default function SiteHeader() {
@@ -21,9 +22,7 @@ export default function SiteHeader() {
   const link = "hover:text-paper";
   return (
     <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-3 px-6 py-6">
-      <Link href="/" className="font-display text-xl font-bold tracking-tight">
-        Leaky<span className="bar font-display">Byte</span>
-      </Link>
+      <Link href="/" aria-label="LeakyByte home"><Logo /></Link>
       <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
         <div ref={box} className="relative">
           <button aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(!open)}

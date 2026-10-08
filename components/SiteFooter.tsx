@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "./Logo";
 import { EMAIL, PRODUCTS, REPO } from "@/lib/site";
 
 const legal = [["Privacy policy", "/privacy"], ["Terms of use", "/terms"], ["Cookies and storage", "/cookies"], ["Security", "/security"], ["Legal notice", "/legal"]];
@@ -10,7 +11,7 @@ export default function SiteFooter() {
     <footer className="border-t border-edge">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-12 text-sm text-muted md:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
-          <p className="font-display text-xl font-bold tracking-tight text-paper">Leaky<span className="bar font-display">Byte</span></p>
+          <Logo />
           <p className="mt-3 max-w-xs leading-relaxed">Tools that stop AI apps from leaking data. Early-stage and built in the open.</p>
         </div>
         <nav aria-label="Products">
