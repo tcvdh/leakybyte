@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "proxy": "node proxy/server.ts",
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "lb": "node cli/leakybyte.ts"
   },
   "dependencies": {
     "next": "16.4.0",
