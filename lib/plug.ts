@@ -6,7 +6,7 @@ export type Finding = { type: "URL" | "HIDDEN_TEXT" | "SECRET"; detail: string }
 // Zero-width, bidi/format controls and the Unicode "tag" block, all used to smuggle invisible text.
 const HIDDEN = /[​-‏‪-‮⁠-⁤\u{E0000}-\u{E007F}]/gu;
 // http(s) URLs in any letter case, plus protocol-relative //host/path.
-const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})[^\s)>\]"'`]+/gi;
+const URLS = /(?:https?:[/\\]*|(?<![\w:/\\.])[/\\]{2})[^\s<>"'`]+/gi; // scans past ) and ]: markdown allows balanced parens in a link target
 // Text right before an auto-fetched image URL: ![alt](, ![alt](<, <img src=, or a reference definition [id]:
 const IMG_BEFORE = /(?:!\[[^\]]*\]\(\s*<?|<img[^>]*\ssrc\s*=\s*["']?|^[ ]{0,3}\[[^\]]+\]:\s*<?)$/im;
 const BLOB = /[A-Za-z0-9+/_=-]{20,}/; // long base64/hex-looking run

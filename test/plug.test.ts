@@ -39,3 +39,8 @@ test("never adds markup to output; catches odd URL spellings", () => {
   for (const u of ["https:\\\\evil.example/x?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=", "https:/evil.example/x?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=", "https:evil.example/x?d=ZGFuYS5yZXllc0Bub3J0aHdpbmQ=", "![](\\\\evil.example/a.png)"])
     assert.ok(blocked(u), u);
 });
+
+test("payload inside parentheses of a link target is still seen", () => {
+  assert.ok(plug("[x](https://evil.example/p?d=(ZGFuYS5yZXllc0Bub3J0aHdpbmQ=))").findings.some((f) => f.type === "URL"));
+  assert.equal(plug("See (https://docs.example.com/guide) now").findings.length, 0);
+});
